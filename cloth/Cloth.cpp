@@ -1,0 +1,113 @@
+//
+// Created by anis on 29/03/2026.
+//
+
+#include "Cloth.hh"
+#include "cloth/Particle.hh"
+#include "object/Triangle.hh"
+#include <cmath>
+#include <memory>
+#include <iostream>
+
+namespace cloth{
+    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass) {
+        this->width = width;
+        this->height = height;
+        float diagonal_spacing = std::sqrt(spacing*spacing + spacing*spacing);
+        
+        // Create each particle of the cloth
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                // Add noise so particles are not in the same plane
+                float z_noise = x * 0.01f;
+                // Create the particle with the spacing
+                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + y * spacing,startZ + z_noise,1,mass);
+                particles.push_back(p);
+            }
+        }
+
+        // Create all the sticks
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                // Get the current particle
+                std::shared_ptr<Particle> current_particle = particles.at((y * width) + x);
+
+                // Add Structural Springs
+                if (x != width - 1) {
+                    std::shared_ptr<Particle>& right_particle = particles.at((y * width) + (x + 1));
+                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(right_particle, current_particle, spacing);
+                    sticks.push_back(stick);
+                }
+
+                if (y != height - 1) {
+                    std::shared_ptr<Particle>& bottom_particle = particles.at(((y + 1) * width) + x);
+                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(bottom_particle, current_particle, spacing);
+                    sticks.push_back(stick);
+                }
+
+                // Add Shearing Springs
+                if (y != height - 1 && x != width - 1) {
+                    std::shared_ptr<Particle>& bottom_right_particle = particles.at(((y + 1) * width) + (x + 1));
+                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(bottom_right_particle, current_particle, diagonal_spacing);
+                    sticks.push_back(stick); 
+                }
+
+                if (y != height - 1 && x != 0) {
+                    std::shared_ptr<Particle>& bottom_left_particle = particles.at(((y + 1) * width) + (x - 1));
+                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(bottom_left_particle, current_particle, diagonal_spacing);
+                    sticks.push_back(stick); 
+                }
+
+                // Add Bending Springs
+                if (x < width - 2) {
+                    std::shared_ptr<Particle>& next_next_right = particles.at((y * width) + (x + 2));
+                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(next_next_right, current_particle, spacing * 2.0f);
+                    sticks.push_back(stick);
+                }
+                if (y < height - 2) {
+                    std::shared_ptr<Particle>& next_next_bottom = particles.at(((y + 2) * width) + x);
+                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(next_next_bottom, current_particle, spacing * 2.0f);
+                    sticks.push_back(stick);
+                }
+            }
+        }
+
+        // Pin the particles at the top
+        particles.at(((height - 1) * width) + 0)->set_is_pinned(true);
+        particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
+    }
+
+    void Cloth::update() {
+        // Update the position of all particles in the cloth
+        for (std::shared_ptr<Particle>&p: particles) {
+            p->update();
+        }
+
+        // Satisfy all the constraints
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
+            for (std::shared_ptr<Stick>&s: sticks) {
+                s->update();
+            }
+        }
+    }
+
+    std::vector<object::Triangle> Cloth::to_triangle(texture::Texture_Material &material) {
+        std::vector<object::Triangle> result;
+        
+        // Iterate over the vector of particles
+        for (int y = 0; y < height - 1; y++) {
+            for (int x = 0; x < width - 1; x++) {
+                // Get the 4 corners needed for the two triangles
+                auto& p1 = particles.at((y * width) + x);
+                auto& p2 = particles.at((y * width) + (x + 1));
+                auto& p3 = particles.at(((y + 1) * width) + x);
+                auto& p4 = particles.at(((y + 1) * width) + (x + 1));
+                
+                // Add the created triangles in the vector
+                result.emplace_back(material, *p1, *p2, *p3);
+                result.emplace_back(material, *p2, *p4, *p3);
+            }
+        }
+        return result;
+    }
+}

@@ -1,0 +1,27 @@
+//
+// Created by anis on 29/03/2026.
+//
+
+#ifndef CLOTH_SIMULATION_CLOTH_HH
+#define CLOTH_SIMULATION_CLOTH_HH
+#include <vector>
+
+#include "Stick.hh"
+#include "object/Triangle.hh"
+
+namespace cloth{
+    class Cloth {
+    public:
+        Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass);
+        void update();
+        std::vector<object::Triangle> to_triangle(texture::Texture_Material &material);
+    private:
+        int width;
+        int height;
+        std::vector<std::shared_ptr<Particle>> particles;
+        std::vector<std::shared_ptr<Stick>> sticks;
+        int NUM_ITERATIONS=30;
+    };
+}
+
+#endif //CLOTH_SIMULATION_CLOTH_HH
