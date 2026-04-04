@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "Image.hh"
 #include "Scene.hh"
@@ -262,6 +263,7 @@ int main() {
     //object::Triangle triangle1{texture, geometry::Point4{-2,1,7,1},geometry::Point4{2,1,7,1},geometry::Point4{0,2,7,1}};
     //object::Triangle triangle2{texture2, geometry::Point4{-3,0,5,1},geometry::Point4{-1,0,5,1},geometry::Point4{0,2,5,1}};
 
+
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     light::Point_Light point_light{1, geometry::Point4{2, 3, 5, 1}}; 
@@ -275,15 +277,20 @@ int main() {
     float beta = 80.0f;
     float z_min = 1.0f;
 
+    // Sphere Parameter
+    auto center = geometry::Point4{0,-1,-0.5,1};
+    auto texture = texture::Uniform_Texture{1,0.5,color::RGB{255,0,0}, 1,0.3};
+    std::shared_ptr<object::Sphere> sphere = std::make_shared<object::Sphere>(texture,center,1);
+
     // Cloth Paramater
-    int grid_size = 40;
+    int grid_size = 20;
     float spacing = 0.15f;
     
     float startX = -((grid_size - 1) * spacing) / 2.0f; 
     float startY = -((grid_size - 1) * spacing);
     float startZ = 0.0f;
     
-    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f};
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{sphere}};
 
     std::cout << "Begin of the simulation." << std::endl;
     
@@ -292,7 +299,7 @@ int main() {
     for (int i = 0; i < num_frames; i++) {
         auto triangles = cloth.to_triangle(texture3);
         
-        std::vector<object::Object*> objects{};
+        std::vector<object::Object*> objects{sphere.get()};
         for (auto& t : triangles) {
             objects.push_back(&t);
         }

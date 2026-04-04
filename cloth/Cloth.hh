@@ -7,12 +7,13 @@
 #include <vector>
 
 #include "Stick.hh"
+#include "object/Sphere.hh"
 #include "object/Triangle.hh"
 
 namespace cloth{
     class Cloth {
     public:
-        Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass);
+        Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres);
         void update();
         std::vector<object::Triangle> to_triangle(texture::Texture_Material &material);
     private:
@@ -20,6 +21,7 @@ namespace cloth{
         int height;
         std::vector<std::shared_ptr<Particle>> particles;
         std::vector<std::shared_ptr<Stick>> sticks;
+        std::vector<std::shared_ptr<object::Sphere>> spheres;
         int NUM_ITERATIONS=30;
     };
 }

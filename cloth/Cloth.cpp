@@ -4,15 +4,18 @@
 
 #include "Cloth.hh"
 #include "cloth/Particle.hh"
+#include "object/Sphere.hh"
 #include "object/Triangle.hh"
 #include <cmath>
 #include <memory>
 #include <iostream>
 
 namespace cloth{
-    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass) {
-        this->width = width;
-        this->height = height;
+    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres):
+    width(width),
+    height(height),
+    spheres(spheres)
+    {
         float diagonal_spacing = std::sqrt(spacing*spacing + spacing*spacing);
         
         // Create each particle of the cloth
@@ -80,15 +83,21 @@ namespace cloth{
     void Cloth::update() {
         // Update the position of all particles in the cloth
         for (std::shared_ptr<Particle>&p: particles) {
-            p->update();
+            p->update(spheres);
         }
 
         // Satisfy all the constraints
         for (int i = 0; i < NUM_ITERATIONS; i++) {
+            // Sphere Collision constraint
+            for (std::shared_ptr<Particle>&p: particles) {
+                p->handle_sphere_collision(spheres);
+            }
+
+            // Distance constraint
             for (std::shared_ptr<Stick>&s: sticks) {
                 s->update();
             }
-        }
+        }        
     }
 
     std::vector<object::Triangle> Cloth::to_triangle(texture::Texture_Material &material) {

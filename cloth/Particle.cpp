@@ -3,6 +3,7 @@
 //
 
 #include "Particle.hh"
+#include "projective_geometry/Point4.hh"
 #include "projective_geometry/Vector4.hh"
 #include <iostream>
 namespace cloth {
@@ -12,7 +13,48 @@ namespace cloth {
     {
     }
 
-    void Particle::update() {
+    void Particle::handle_sphere_collision(const std::vector<std::shared_ptr<object::Sphere>>& spheres) {
+        // Iterate over each sphere of the scene
+        for (const auto& s: spheres) {
+            // Get the center and radius of the sphere
+            auto center = s->get_center();
+            float radius = s->get_radius();
+            // Compute a vector from the sphere center to the particle
+            auto sphere_to_point = *this - center;
+            // Compute distance between particle and sphere center
+            float distance = sphere_to_point.norm();
+            // Verify if the particle is inside the sphere
+            if (distance < radius) {
+                // Project the particle to the closest point on the sphere’s surface
+                // Normalize the normal vector
+                sphere_to_point.normalize();
+                // Add a small offset to avoid the cloth to be under the sphere
+                float epsilon =  1e-3f;
+                geometry::Point4 new_position = center + sphere_to_point * (radius + epsilon);
+
+                // Compute vector of movement
+                float dx = new_position.get_x() - x;
+                float dy = new_position.get_y() - y;
+                float dz = new_position.get_z() - z;
+
+                // Correct the particle position so it's on the surface of the sphere
+                x = new_position.get_x();
+                y = new_position.get_y();
+                z = new_position.get_z();
+
+                //std::cout << (*this - center).norm() << std::endl;
+
+                // Adjust the particle’s previous position to keep same original velocity
+                prev_x += dx;
+                prev_y += dy;
+                prev_z += dz;
+
+                return;
+            }
+        }        
+    }
+
+    void Particle::update(const std::vector<std::shared_ptr<object::Sphere>>& spheres) {
         // Don't update fixed (pinned) particle
         if (is_pinned) {return;}
 
@@ -40,6 +82,5 @@ namespace cloth {
         prev_x = prevPosition.get_x();
         prev_y = prevPosition.get_y();
         prev_z = prevPosition.get_z();
-
     }
 }
