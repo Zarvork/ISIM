@@ -9,6 +9,7 @@
 #include <cmath>
 #include <memory>
 #include <iostream>
+#include <random>
 
 namespace cloth{
     Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres):
@@ -17,12 +18,16 @@ namespace cloth{
     spheres(spheres)
     {
         float diagonal_spacing = std::sqrt(spacing*spacing + spacing*spacing);
+        // Necessary to generate random noise for z particles position
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> noise(-0.01f, 0.01f);
         
         // Create each particle of the cloth
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 // Add noise so particles are not in the same plane
-                float z_noise = x * 0.01f;
+                float z_noise = noise(gen);
                 // Create the particle with the spacing
                 std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + y * spacing,startZ + z_noise,1,mass);
                 particles.push_back(p);
@@ -83,19 +88,20 @@ namespace cloth{
     void Cloth::update() {
         // Update the position of all particles in the cloth
         for (std::shared_ptr<Particle>&p: particles) {
-            p->update(spheres);
+            p->update();
         }
 
         // Satisfy all the constraints
         for (int i = 0; i < NUM_ITERATIONS; i++) {
-            // Sphere Collision constraint
-            for (std::shared_ptr<Particle>&p: particles) {
-                p->handle_sphere_collision(spheres);
-            }
-
+            
             // Distance constraint
             for (std::shared_ptr<Stick>&s: sticks) {
                 s->update();
+            }
+
+            // Sphere Collision constraint
+            for (std::shared_ptr<Particle>&p: particles) {
+                p->handle_sphere_collision(spheres);
             }
         }        
     }

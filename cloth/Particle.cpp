@@ -29,7 +29,7 @@ namespace cloth {
                 // Normalize the normal vector
                 sphere_to_point.normalize();
                 // Add a small offset to avoid the cloth to be under the sphere
-                float epsilon =  1e-3f;
+                float epsilon =  0.02f;
                 geometry::Point4 new_position = center + sphere_to_point * (radius + epsilon);
 
                 // Compute vector of movement
@@ -48,13 +48,11 @@ namespace cloth {
                 prev_x += dx;
                 prev_y += dy;
                 prev_z += dz;
-
-                return;
             }
         }        
     }
 
-    void Particle::update(const std::vector<std::shared_ptr<object::Sphere>>& spheres) {
+    void Particle::update() {
         // Don't update fixed (pinned) particle
         if (is_pinned) {return;}
 
