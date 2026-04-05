@@ -15,6 +15,8 @@
 #include "light/Point_Light.hh"
 #include "object/Sphere.hh"
 #include "object/Triangle.hh"
+#include "projective_geometry/Point4.hh"
+#include "projective_geometry/Vector4.hh"
 #include "texture/Uniform_Texture.hh"
 void compute_camera_coordinate_system(const Camera& camera, geometry::Vector4& W, geometry::Vector4& U,  geometry::Vector4& V) {
     W = (camera.get_p() - camera.get_center());
@@ -35,6 +37,38 @@ object::Object* compute_closest_object(const geometry::Point4& ray_origin,const 
         if (intersection_point.has_value()) {
             // Verify if we already have the closest object
             if (closest_object_coord.has_value()) {
+                // Case where the closest object is a sphere and the compared object is a triangle
+                object::Triangle* t = dynamic_cast<object::Triangle*>(o);
+                object::Sphere* s = dynamic_cast<object::Sphere*>(closest_object);
+
+                // Case where the closest object is a triangle and the compared object is a sphere
+                if (t == nullptr && s == nullptr) {
+                    t = dynamic_cast<object::Triangle*>(closest_object);
+                    s = dynamic_cast<object::Sphere*>(o);
+                }
+
+                // Handle the case where a triangle is under the sphere but it has to be drawn
+                if (t != nullptr && s != nullptr) {
+                    // Get the center and radius of the sphere
+                    geometry::Point4 center = s->get_center();
+                    float radius = s->get_radius();
+                    // Get the 3 points of the triangle
+                    geometry::Vector4 sphere_to_a = t->get_a() - center;
+                    geometry::Vector4 sphere_to_b = t->get_b() - center;
+                    geometry::Vector4 sphere_to_c = t->get_c() - center;
+                    // Check to see if at least one point is on the sphere
+                    if (sphere_to_a.norm() - radius < 0.01f ||
+                        sphere_to_b.norm() - radius < 0.01f ||
+                        sphere_to_c.norm() - radius < 0.01f)
+                    {
+                        // Consider the triangle as the closest object
+                        if (closest_object != t) {
+                             closest_object_coord = intersection_point;
+                             closest_object = o;
+                        }
+                        continue;
+                    }
+                }
                 // Check which object is closer to the ray origin point
                 float distance_closest_object = (ray_origin - closest_object_coord.value()).norm();
                 float distance_intersection_point = (ray_origin - intersection_point.value()).norm();

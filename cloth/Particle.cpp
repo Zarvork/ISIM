@@ -29,8 +29,7 @@ namespace cloth {
                 // Normalize the normal vector
                 sphere_to_point.normalize();
                 // Add a small offset to avoid the cloth to be under the sphere
-                float epsilon =  0.02f;
-                geometry::Point4 new_position = center + sphere_to_point * (radius + epsilon);
+                geometry::Point4 new_position = center + sphere_to_point * radius;
 
                 // Compute vector of movement
                 float dx = new_position.get_x() - x;
