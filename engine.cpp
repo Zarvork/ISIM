@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "Image.hh"
 #include "Scene.hh"
@@ -14,6 +15,8 @@
 #include "light/Point_Light.hh"
 #include "object/Sphere.hh"
 #include "object/Triangle.hh"
+#include "projective_geometry/Point4.hh"
+#include "projective_geometry/Vector4.hh"
 #include "texture/Uniform_Texture.hh"
 void compute_camera_coordinate_system(const Camera& camera, geometry::Vector4& W, geometry::Vector4& U,  geometry::Vector4& V) {
     W = (camera.get_p() - camera.get_center());
@@ -34,6 +37,38 @@ object::Object* compute_closest_object(const geometry::Point4& ray_origin,const 
         if (intersection_point.has_value()) {
             // Verify if we already have the closest object
             if (closest_object_coord.has_value()) {
+                // Case where the closest object is a sphere and the compared object is a triangle
+                object::Triangle* t = dynamic_cast<object::Triangle*>(o);
+                object::Sphere* s = dynamic_cast<object::Sphere*>(closest_object);
+
+                // Case where the closest object is a triangle and the compared object is a sphere
+                if (t == nullptr && s == nullptr) {
+                    t = dynamic_cast<object::Triangle*>(closest_object);
+                    s = dynamic_cast<object::Sphere*>(o);
+                }
+
+                // Handle the case where a triangle is under the sphere but it has to be drawn
+                if (t != nullptr && s != nullptr) {
+                    // Get the center and radius of the sphere
+                    geometry::Point4 center = s->get_center();
+                    float radius = s->get_radius();
+                    // Get the 3 points of the triangle
+                    geometry::Vector4 sphere_to_a = t->get_a() - center;
+                    geometry::Vector4 sphere_to_b = t->get_b() - center;
+                    geometry::Vector4 sphere_to_c = t->get_c() - center;
+                    // Check to see if at least one point is on the sphere
+                    if (sphere_to_a.norm() - radius < 0.01f ||
+                        sphere_to_b.norm() - radius < 0.01f ||
+                        sphere_to_c.norm() - radius < 0.01f)
+                    {
+                        // Consider the triangle as the closest object
+                        if (closest_object != t) {
+                             closest_object_coord = intersection_point;
+                             closest_object = o;
+                        }
+                        continue;
+                    }
+                }
                 // Check which object is closer to the ray origin point
                 float distance_closest_object = (ray_origin - closest_object_coord.value()).norm();
                 float distance_intersection_point = (ray_origin - intersection_point.value()).norm();
@@ -262,37 +297,54 @@ int main() {
     //object::Triangle triangle1{texture, geometry::Point4{-2,1,7,1},geometry::Point4{2,1,7,1},geometry::Point4{0,2,7,1}};
     //object::Triangle triangle2{texture2, geometry::Point4{-3,0,5,1},geometry::Point4{-1,0,5,1},geometry::Point4{0,2,5,1}};
 
+
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     light::Point_Light point_light{1, geometry::Point4{2, 3, 5, 1}}; 
     std::vector<light::Light *> lights{&point_light};
 
     // Camera
-    auto center_camera = geometry::Point4{0, -1, 6, 1};
-    auto p = geometry::Point4{0, -3, 0, 1};
+    auto center_camera = geometry::Point4{4.0f, 3.0f, 4.0f, 1.0f};
+    auto p = geometry::Point4{0.0f, 0.0f, 0.0f, 1.0f};
     auto up = geometry::Vector4{0, 1, 0};
-    float alpha = 80.0f;
-    float beta = 80.0f;
+    float alpha = 60.0f;
+    float beta = 60.0f;
     float z_min = 1.0f;
 
+    // Sphere Parameter
+    auto center = geometry::Point4{0.0f, 0.0f, 0.0f, 1.0f};
+    auto texture = texture::Uniform_Texture{1,0.5,color::RGB{255,0,0}, 1,0.3};
+    std::shared_ptr<object::Sphere> sphere = std::make_shared<object::Sphere>(texture,center,1);
+
     // Cloth Paramater
-    int grid_size = 40;
-    float spacing = 0.15f;
+    int grid_size = 60;
+    float spacing = 0.06f; // 0.15f
     
     float startX = -((grid_size - 1) * spacing) / 2.0f; 
-    float startY = -((grid_size - 1) * spacing);
-    float startZ = 0.0f;
+    float startY = 1.2f;//-((grid_size - 1) * spacing);
+    float startZ = -((grid_size - 1) * spacing) / 2.0f;
     
-    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f};
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{sphere}};
 
     std::cout << "Begin of the simulation." << std::endl;
     
     int num_frames = 60;
-    
+    // Time interval between two generated images
+    float time_between_image = 0.033f;
+    // Time difference between the current frame and the previous one
+    float delta_time = 1.f / 600.f;
+    int nb_steps = time_between_image / delta_time;
+    // Controls how quickly the simulation loses energy
+    float damping_global = 0.98f;
+    float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
+
+    std::cout << "Number of steps: " << nb_steps << std::endl;
+    std::cout << "damping_step: " << damping_step << std::endl;
+
     for (int i = 0; i < num_frames; i++) {
         auto triangles = cloth.to_triangle(texture3);
         
-        std::vector<object::Object*> objects{};
+        std::vector<object::Object*> objects{sphere.get()};
         for (auto& t : triangles) {
             objects.push_back(&t);
         }
@@ -309,8 +361,8 @@ int main() {
         image.save(file_name);
         
         // Update multiple times so it moves faster between generated images
-        for (int step = 0; step < 30; step++) {
-            cloth.update();
+        for (int step = 0; step < nb_steps; step++) {
+            cloth.update(delta_time,damping_step);
         }
     }
     std::cout << "Finished !" << std::endl;

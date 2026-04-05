@@ -4,24 +4,34 @@
 
 #include "Cloth.hh"
 #include "cloth/Particle.hh"
+#include "object/Sphere.hh"
 #include "object/Triangle.hh"
 #include <cmath>
 #include <memory>
 #include <iostream>
+#include <random>
 
 namespace cloth{
-    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass) {
-        this->width = width;
-        this->height = height;
+    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres):
+    width(width),
+    height(height),
+    spheres(spheres)
+    {
         float diagonal_spacing = std::sqrt(spacing*spacing + spacing*spacing);
+        // Necessary to generate random noise for z particles position
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> noise(-0.01f, 0.01f);
         
         // Create each particle of the cloth
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 // Add noise so particles are not in the same plane
-                float z_noise = x * 0.01f;
+                float noise_value = noise(gen);
                 // Create the particle with the spacing
-                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + y * spacing,startZ + z_noise,1,mass);
+                // startY + y * spacing
+                // startZ + noise_value
+                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + noise_value,startZ + y * spacing,1,mass);
                 particles.push_back(p);
             }
         }
@@ -73,22 +83,29 @@ namespace cloth{
         }
 
         // Pin the particles at the top
-        particles.at(((height - 1) * width) + 0)->set_is_pinned(true);
-        particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
+        //particles.at(((height - 1) * width) + 0)->set_is_pinned(true);
+        //particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
     }
 
-    void Cloth::update() {
+    void Cloth::update(float delta_time, float damping) {
         // Update the position of all particles in the cloth
         for (std::shared_ptr<Particle>&p: particles) {
-            p->update();
+            p->update(delta_time, damping);
         }
 
         // Satisfy all the constraints
         for (int i = 0; i < NUM_ITERATIONS; i++) {
+            
+            // Distance constraint
             for (std::shared_ptr<Stick>&s: sticks) {
                 s->update();
             }
-        }
+
+            // Sphere Collision constraint
+            for (std::shared_ptr<Particle>&p: particles) {
+                p->handle_sphere_collision(spheres);
+            }
+        }        
     }
 
     std::vector<object::Triangle> Cloth::to_triangle(texture::Texture_Material &material) {

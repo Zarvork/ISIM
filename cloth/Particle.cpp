@@ -3,6 +3,7 @@
 //
 
 #include "Particle.hh"
+#include "projective_geometry/Point4.hh"
 #include "projective_geometry/Vector4.hh"
 #include <iostream>
 namespace cloth {
@@ -12,15 +13,61 @@ namespace cloth {
     {
     }
 
-    void Particle::update() {
+    void Particle::handle_sphere_collision(const std::vector<std::shared_ptr<object::Sphere>>& spheres) {
+        // Iterate over each sphere of the scene
+        for (const auto& s: spheres) {
+            // Get the center and radius of the sphere
+            auto center = s->get_center();
+            float radius = s->get_radius();
+            // Compute a vector from the sphere center to the particle
+            auto sphere_to_point = *this - center;
+            // Compute distance between particle and sphere center
+            float distance = sphere_to_point.norm();
+            // Verify if the particle is inside the sphere
+            if (distance < radius) {
+                // Project the particle to the closest point on the sphere’s surface
+                // Normalize the normal vector
+                sphere_to_point.normalize();
+                // Add a small offset to avoid the cloth to be under the sphere
+                geometry::Point4 new_position = center + sphere_to_point * radius;
+  
+                // Compute the velocity
+                float vx = x - prev_x;
+                float vy = y - prev_y;
+                float vz = z - prev_z;
+
+                // Compute the normal component of the velocity
+                float nx = sphere_to_point.get_x();
+                float ny = sphere_to_point.get_y();
+                float nz = sphere_to_point.get_z();
+                float vn = vx * nx + vy * ny + vz * nz;
+
+                // Remove the normal component of the velocity that points inside the sphere
+                if (vn < 0.f) {
+                    vx -= vn * nx;
+                    vy -= vn * ny;
+                    vz -= vn * nz;
+                }
+
+                // Correct the particle position so it's on the surface of the sphere
+                x = new_position.get_x();
+                y = new_position.get_y();
+                z = new_position.get_z();
+
+                // Modify the particle's previous position with the adjusted velocity
+                prev_x = x - vx;
+                prev_y = y - vy;
+                prev_z = z - vz;
+            }
+        }        
+    }
+
+    void Particle::update(float delta_time, float damping) {
+        // delta_time = Time difference between the current frame and the previous one
+        // damping = Controls how quickly the simulation loses energy
+
         // Don't update fixed (pinned) particle
         if (is_pinned) {return;}
-
-        // Time difference between the current frame and the previous one
-        float delta_time = 1.f / 60.f; // 60 FPS 1.f/60.f
-
-        // Controls how quickly the simulation loses energy
-        float damping = 0.99f;
 
         // Accumulated force acting on the particle
         geometry::Vector4 force{0.f, -9.81f, 0.f};
@@ -40,6 +87,5 @@ namespace cloth {
         prev_x = prevPosition.get_x();
         prev_y = prevPosition.get_y();
         prev_z = prevPosition.get_z();
-
     }
 }

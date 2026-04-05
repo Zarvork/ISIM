@@ -4,13 +4,19 @@
 
 #ifndef CLOTH_SIMULATION_PARTICLE_HH
 #define CLOTH_SIMULATION_PARTICLE_HH
+#include "object/Sphere.hh"
 #include "projective_geometry/Point4.hh"
+#include <memory>
+#include <vector>
 
 namespace cloth {
     class Particle : public geometry::Point4{
     public:
         Particle(float x, float y, float z, float w, float mass);
-        void update();
+        
+        void update(float delta_time, float damping);
+
+        void handle_sphere_collision(const std::vector<std::shared_ptr<object::Sphere>>& spheres);
 
         float get_mass() {return mass;}
 
@@ -24,6 +30,7 @@ namespace cloth {
         float prev_z;
         float mass; // Between 0.1f to 1.0f is good
         bool is_pinned;
+        
     };
 }
 
