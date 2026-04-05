@@ -14,7 +14,7 @@ namespace cloth{
     class Cloth {
     public:
         Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres);
-        void update();
+        void update(float delta_time, float damping);
         std::vector<object::Triangle> to_triangle(texture::Texture_Material &material);
     private:
         int width;

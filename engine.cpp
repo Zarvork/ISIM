@@ -321,7 +321,7 @@ int main() {
     float spacing = 0.15f;
     
     float startX = -((grid_size - 1) * spacing) / 2.0f; 
-    float startY = -((grid_size - 1) * spacing);
+    float startY = 1.0f;//-((grid_size - 1) * spacing);
     float startZ = 0.0f;
     
     cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{sphere}};
@@ -329,7 +329,18 @@ int main() {
     std::cout << "Begin of the simulation." << std::endl;
     
     int num_frames = 60;
-    
+    // Time interval between two generated images
+    float time_between_image = 0.5f;
+    // Time difference between the current frame and the previous one
+    float delta_time = 1.f / 600.f;
+    int nb_steps = time_between_image / delta_time;
+    // Controls how quickly the simulation loses energy
+    float damping_global = 0.99f;
+    float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
+
+    std::cout << "Number of steps: " << nb_steps << std::endl;
+    std::cout << "damping_step: " << damping_step << std::endl;
+
     for (int i = 0; i < num_frames; i++) {
         auto triangles = cloth.to_triangle(texture3);
         
@@ -350,8 +361,8 @@ int main() {
         image.save(file_name);
         
         // Update multiple times so it moves faster between generated images
-        for (int step = 0; step < 30; step++) {
-            cloth.update();
+        for (int step = 0; step < nb_steps; step++) {
+            cloth.update(delta_time,damping_step);
         }
     }
     std::cout << "Finished !" << std::endl;

@@ -30,36 +30,44 @@ namespace cloth {
                 sphere_to_point.normalize();
                 // Add a small offset to avoid the cloth to be under the sphere
                 geometry::Point4 new_position = center + sphere_to_point * radius;
+  
+                // Compute the velocity
+                float vx = x - prev_x;
+                float vy = y - prev_y;
+                float vz = z - prev_z;
 
-                // Compute vector of movement
-                float dx = new_position.get_x() - x;
-                float dy = new_position.get_y() - y;
-                float dz = new_position.get_z() - z;
+                // Compute the normal component of the velocity
+                float nx = sphere_to_point.get_x();
+                float ny = sphere_to_point.get_y();
+                float nz = sphere_to_point.get_z();
+                float vn = vx * nx + vy * ny + vz * nz;
+
+                // Remove the normal component of the velocity that points inside the sphere
+                if (vn < 0.f) {
+                    vx -= vn * nx;
+                    vy -= vn * ny;
+                    vz -= vn * nz;
+                }
 
                 // Correct the particle position so it's on the surface of the sphere
                 x = new_position.get_x();
                 y = new_position.get_y();
                 z = new_position.get_z();
 
-                //std::cout << (*this - center).norm() << std::endl;
-
-                // Adjust the particle’s previous position to keep same original velocity
-                prev_x += dx;
-                prev_y += dy;
-                prev_z += dz;
+                // Modify the particle's previous position with the adjusted velocity
+                prev_x = x - vx;
+                prev_y = y - vy;
+                prev_z = z - vz;
             }
         }        
     }
 
-    void Particle::update() {
+    void Particle::update(float delta_time, float damping) {
+        // delta_time = Time difference between the current frame and the previous one
+        // damping = Controls how quickly the simulation loses energy
+
         // Don't update fixed (pinned) particle
         if (is_pinned) {return;}
-
-        // Time difference between the current frame and the previous one
-        float delta_time = 1.f / 60.f; // 60 FPS 1.f/60.f
-
-        // Controls how quickly the simulation loses energy
-        float damping = 0.99f;
 
         // Accumulated force acting on the particle
         geometry::Vector4 force{0.f, -9.81f, 0.f};
