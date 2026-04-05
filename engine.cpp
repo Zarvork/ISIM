@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include "cloth/Particle.hh"
 #include "color/RGB_f.hh"
 #include "light/Point_Light.hh"
+#include "object/Object.hh"
 #include "object/Sphere.hh"
 #include "object/Triangle.hh"
 #include "projective_geometry/Point4.hh"
@@ -27,10 +29,11 @@ void compute_camera_coordinate_system(const Camera& camera, geometry::Vector4& W
     V.normalize();
 }
 
-object::Object* compute_closest_object(const geometry::Point4& ray_origin,const geometry::Vector4& ray_direction,const std::vector<object::Object *>& objects,std::optional<geometry::Point4>& closest_object_coord) {
+object::Object* compute_closest_object(const geometry::Point4& ray_origin,const geometry::Vector4& ray_direction,const std::vector<std::shared_ptr<object::Object>>& objects,std::optional<geometry::Point4>& closest_object_coord) {
     object::Object* closest_object{nullptr};
     // Iterate over each object
-    for (auto o : objects) {
+    for (const std::shared_ptr<object::Object>& o : objects) {
+        object::Object* obj_ptr = o.get();
         // Get the intersection point between the ray and the object
         auto intersection_point = o->does_ray_intersect(ray_origin,ray_direction);
         // If intersection point found
@@ -38,13 +41,13 @@ object::Object* compute_closest_object(const geometry::Point4& ray_origin,const 
             // Verify if we already have the closest object
             if (closest_object_coord.has_value()) {
                 // Case where the closest object is a sphere and the compared object is a triangle
-                object::Triangle* t = dynamic_cast<object::Triangle*>(o);
+                object::Triangle* t = dynamic_cast<object::Triangle*>(obj_ptr);
                 object::Sphere* s = dynamic_cast<object::Sphere*>(closest_object);
 
                 // Case where the closest object is a triangle and the compared object is a sphere
                 if (t == nullptr && s == nullptr) {
                     t = dynamic_cast<object::Triangle*>(closest_object);
-                    s = dynamic_cast<object::Sphere*>(o);
+                    s = dynamic_cast<object::Sphere*>(obj_ptr);
                 }
 
                 // Handle the case where a triangle is under the sphere but it has to be drawn
@@ -64,7 +67,7 @@ object::Object* compute_closest_object(const geometry::Point4& ray_origin,const 
                         // Consider the triangle as the closest object
                         if (closest_object != t) {
                              closest_object_coord = intersection_point;
-                             closest_object = o;
+                             closest_object = obj_ptr;
                         }
                         continue;
                     }
@@ -74,11 +77,11 @@ object::Object* compute_closest_object(const geometry::Point4& ray_origin,const 
                 float distance_intersection_point = (ray_origin - intersection_point.value()).norm();
                 if (distance_intersection_point < distance_closest_object) {
                     closest_object_coord = intersection_point;
-                    closest_object = o;
+                    closest_object = obj_ptr;
                 }
             } else {
                 closest_object_coord = intersection_point;
-                closest_object = o;
+                closest_object = obj_ptr;
             }
         }
     }
@@ -126,12 +129,12 @@ color::RGB_f compute_specular_intensity(const texture::SurfaceProperties& textur
     return result;
 }
 
-color::RGB_f compute_local_illumination(const std::vector<light::Light *>& lights,
+color::RGB_f compute_local_illumination(const std::vector<std::shared_ptr<light::Light>>& lights,
     const object::Object* closest_object,
     const geometry::Point4& closest_object_coord,
     const geometry::Vector4& ray_direction,
     float ambient_intensity,
-    const std::vector<object::Object *>& objects,
+    const std::vector<std::shared_ptr<object::Object>>& objects,
     int n
     )
 {
@@ -221,9 +224,9 @@ color::RGB_f compute_local_illumination(const std::vector<light::Light *>& light
 
 void generate_image(Scene& scene, Image& image) {
     std::vector<color::RGB>& pixels = image.get_pixels();
-    const std::vector<object::Object *>& objects = scene.get_objects();
+    const std::vector<std::shared_ptr<object::Object>>& objects = scene.get_objects();
     const Camera& camera = scene.get_camera();
-    const std::vector<light::Light *>& lights = scene.get_lights();
+    const std::vector<std::shared_ptr<light::Light>>& lights = scene.get_lights();
     float ambient_intensity = scene.get_ambient_intensity();
     // Calculating the camera's coordinate system
     geometry::Vector4 W{};
@@ -300,8 +303,8 @@ int main() {
 
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
-    light::Point_Light point_light{1, geometry::Point4{2, 3, 5, 1}}; 
-    std::vector<light::Light *> lights{&point_light};
+    std::shared_ptr<light::Light> point_light = std::make_shared<light::Point_Light>(1, geometry::Point4{2, 3, 5, 1}); 
+    std::vector<std::shared_ptr<light::Light>> lights{point_light};
 
     // Camera
     auto center_camera = geometry::Point4{4.0f, 3.0f, 4.0f, 1.0f};
@@ -344,9 +347,9 @@ int main() {
     for (int i = 0; i < num_frames; i++) {
         auto triangles = cloth.to_triangle(texture3);
         
-        std::vector<object::Object*> objects{sphere.get()};
+        std::vector<std::shared_ptr<object::Object>> objects{sphere};
         for (auto& t : triangles) {
-            objects.push_back(&t);
+            objects.push_back(t);
         }
         
         Image image{400, 400}; 

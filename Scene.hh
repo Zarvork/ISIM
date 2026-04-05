@@ -4,6 +4,7 @@
 
 #ifndef TP1_SCENE_HH
 #define TP1_SCENE_HH
+#include <memory>
 #include <vector>
 
 #include "Camera.hh"
@@ -14,20 +15,20 @@
 class Scene {
 public:
 
-    Scene(const std::vector<object::Object *> &objects, const std::vector<light::Light *> &lights, const Camera &camera,float ambient_intensity);
-    const std::vector<object::Object *>& get_objects() const {
+    Scene(const std::vector<std::shared_ptr<object::Object>> &objects, const std::vector<std::shared_ptr<light::Light>> &lights, const Camera &camera,float ambient_intensity);
+    const std::vector<std::shared_ptr<object::Object>>& get_objects() const {
         return objects;
     }
 
-    void set_objects(const std::vector<object::Object *> &objects) {
+    void set_objects(const std::vector<std::shared_ptr<object::Object>> &objects) {
         this->objects = objects;
     }
 
-    const std::vector<light::Light *>& get_lights() const {
+    const std::vector<std::shared_ptr<light::Light>>& get_lights() const {
         return lights;
     }
 
-    void set_lights(const std::vector<light::Light *> &lights) {
+    void set_lights(const std::vector<std::shared_ptr<light::Light>> &lights) {
         this->lights = lights;
     }
 
@@ -48,8 +49,8 @@ public:
     }
 
 private:
-    std::vector<object::Object *> objects;
-    std::vector<light::Light*> lights;
+    std::vector<std::shared_ptr<object::Object>> objects;
+    std::vector<std::shared_ptr<light::Light>> lights;
     Camera camera;
     float ambient_intensity;
 };
