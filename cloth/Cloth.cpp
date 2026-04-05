@@ -108,8 +108,8 @@ namespace cloth{
         }        
     }
 
-    std::vector<object::Triangle> Cloth::to_triangle(texture::Texture_Material &material) {
-        std::vector<object::Triangle> result;
+    std::vector<std::shared_ptr<object::Triangle>> Cloth::to_triangle(texture::Texture_Material &material) {
+        std::vector<std::shared_ptr<object::Triangle>> result;
         
         // Iterate over the vector of particles
         for (int y = 0; y < height - 1; y++) {
@@ -121,8 +121,8 @@ namespace cloth{
                 auto& p4 = particles.at(((y + 1) * width) + (x + 1));
                 
                 // Add the created triangles in the vector
-                result.emplace_back(material, *p1, *p2, *p3);
-                result.emplace_back(material, *p2, *p4, *p3);
+                result.push_back(std::make_shared<object::Triangle>(material, *p1, *p2, *p3));
+                result.push_back(std::make_shared<object::Triangle>(material, *p2, *p4, *p3));
             }
         }
         return result;

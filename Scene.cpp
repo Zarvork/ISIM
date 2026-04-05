@@ -4,7 +4,7 @@
 
 #include "Scene.hh"
 
-Scene::Scene(const std::vector<object::Object *> &objects, const std::vector<light::Light *> &lights, const Camera &camera,float ambient_intensity)
+Scene::Scene(const std::vector<std::shared_ptr<object::Object>> &objects, const std::vector<std::shared_ptr<light::Light>> &lights, const Camera &camera,float ambient_intensity)
 :
 objects(objects),
 lights(lights),
