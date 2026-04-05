@@ -304,25 +304,25 @@ int main() {
     std::vector<light::Light *> lights{&point_light};
 
     // Camera
-    auto center_camera = geometry::Point4{0, -1, 6, 1};
-    auto p = geometry::Point4{0, -3, 0, 1};
+    auto center_camera = geometry::Point4{4.0f, 3.0f, 4.0f, 1.0f};
+    auto p = geometry::Point4{0.0f, 0.0f, 0.0f, 1.0f};
     auto up = geometry::Vector4{0, 1, 0};
-    float alpha = 80.0f;
-    float beta = 80.0f;
+    float alpha = 60.0f;
+    float beta = 60.0f;
     float z_min = 1.0f;
 
     // Sphere Parameter
-    auto center = geometry::Point4{0,-1,-0.5,1};
+    auto center = geometry::Point4{0.0f, 0.0f, 0.0f, 1.0f};
     auto texture = texture::Uniform_Texture{1,0.5,color::RGB{255,0,0}, 1,0.3};
     std::shared_ptr<object::Sphere> sphere = std::make_shared<object::Sphere>(texture,center,1);
 
     // Cloth Paramater
-    int grid_size = 20;
-    float spacing = 0.15f;
+    int grid_size = 60;
+    float spacing = 0.06f; // 0.15f
     
     float startX = -((grid_size - 1) * spacing) / 2.0f; 
-    float startY = 1.0f;//-((grid_size - 1) * spacing);
-    float startZ = 0.0f;
+    float startY = 1.2f;//-((grid_size - 1) * spacing);
+    float startZ = -((grid_size - 1) * spacing) / 2.0f;
     
     cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{sphere}};
 
@@ -330,12 +330,12 @@ int main() {
     
     int num_frames = 60;
     // Time interval between two generated images
-    float time_between_image = 0.5f;
+    float time_between_image = 0.033f;
     // Time difference between the current frame and the previous one
     float delta_time = 1.f / 600.f;
     int nb_steps = time_between_image / delta_time;
     // Controls how quickly the simulation loses energy
-    float damping_global = 0.99f;
+    float damping_global = 0.98f;
     float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
 
     std::cout << "Number of steps: " << nb_steps << std::endl;

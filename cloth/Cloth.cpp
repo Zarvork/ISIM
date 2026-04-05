@@ -27,9 +27,11 @@ namespace cloth{
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 // Add noise so particles are not in the same plane
-                float z_noise = noise(gen);
+                float noise_value = noise(gen);
                 // Create the particle with the spacing
-                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + y * spacing,startZ + z_noise,1,mass);
+                // startY + y * spacing
+                // startZ + noise_value
+                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + noise_value,startZ + y * spacing,1,mass);
                 particles.push_back(p);
             }
         }
