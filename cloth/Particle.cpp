@@ -46,7 +46,7 @@ namespace cloth {
 
                     // Handling friction (Coulomb friction model)
                     float penetration_depth = radius - distance;
-                    float friction_constant = 0.3f;
+                    float friction_constant = 0.95f; //0.3f
 
                     float tangential_velocity_norm = tangential_velocity.norm();
 

@@ -331,9 +331,9 @@ int main() {
 
     std::cout << "Begin of the simulation." << std::endl;
     
-    int num_frames = 60;
+    int num_frames = 1000;
     // Time interval between two generated images
-    float time_between_image = 0.033f;
+    float time_between_image = 0.033f; // 30 FPS
     // Time difference between the current frame and the previous one
     float delta_time = 1.f / 600.f;
     int nb_steps = time_between_image / delta_time;
