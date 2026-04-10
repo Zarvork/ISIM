@@ -5,6 +5,7 @@
 #include "Particle.hh"
 #include "projective_geometry/Point4.hh"
 #include "projective_geometry/Vector4.hh"
+#include <algorithm>
 #include <iostream>
 namespace cloth {
     Particle::Particle(float x, float y, float z, float w, float mass)
@@ -25,28 +26,50 @@ namespace cloth {
             float distance = sphere_to_point.norm();
             // Verify if the particle is inside the sphere
             if (distance < radius) {
-                // Project the particle to the closest point on the sphere’s surface
                 // Normalize the normal vector
                 sphere_to_point.normalize();
-                // Add a small offset to avoid the cloth to be under the sphere
+                // Project the particle to the closest point on the sphere’s surface
                 geometry::Point4 new_position = center + sphere_to_point * radius;
   
                 // Compute the velocity
-                float vx = x - prev_x;
-                float vy = y - prev_y;
-                float vz = z - prev_z;
-
+                geometry::Point4 prev_point{prev_x, prev_y, prev_z, 1.0f};
+                geometry::Vector4 velocity = *this - prev_point;
+                
                 // Compute the normal component of the velocity
-                float nx = sphere_to_point.get_x();
-                float ny = sphere_to_point.get_y();
-                float nz = sphere_to_point.get_z();
-                float vn = vx * nx + vy * ny + vz * nz;
+                float normal_velocity = sphere_to_point.dotProduct(velocity);
+                
+                // Remove the normal component of the velocity when it points inside the sphere (only tangential velocity left)
+                if (normal_velocity < 0.f) {
 
-                // Remove the normal component of the velocity that points inside the sphere
-                if (vn < 0.f) {
-                    vx -= vn * nx;
-                    vy -= vn * ny;
-                    vz -= vn * nz;
+                    // Isolate the tangential velocity
+                    geometry::Vector4 tangential_velocity = velocity - sphere_to_point*normal_velocity;
+
+                    // Handling friction (Coulomb friction model)
+                    float penetration_depth = radius - distance;
+                    float friction_constant = 0.95f; //0.3f
+
+                    float tangential_velocity_norm = tangential_velocity.norm();
+
+                    // Case where the tangential velocity norm is very low (no movement to avoid division by zero)
+                    if (tangential_velocity_norm <= 1e-6f) {
+                        velocity = geometry::Vector4{0.f,0.f,0.f};
+                    }
+                    else {
+                        // Amount of tangential velocity reduction due to friction
+                        float friction_force = penetration_depth * friction_constant;
+
+                        // Compute the tangential velocity norm reduced by friction
+                        float new_tangential_velocity_norm = tangential_velocity_norm - friction_force;
+
+                        // Case where the friction is stronger than the tangential velocity (no movement)
+                        if (new_tangential_velocity_norm <= 0.f) {
+                            velocity = geometry::Vector4{0.f,0.f,0.f};
+                        }
+                        else {
+                            // Scale the tangential velocity vector with its new norm
+                            velocity = tangential_velocity*(new_tangential_velocity_norm/tangential_velocity_norm);
+                        }
+                    }
                 }
 
                 // Correct the particle position so it's on the surface of the sphere
@@ -55,9 +78,9 @@ namespace cloth {
                 z = new_position.get_z();
 
                 // Modify the particle's previous position with the adjusted velocity
-                prev_x = x - vx;
-                prev_y = y - vy;
-                prev_z = z - vz;
+                prev_x = x - velocity.get_x();
+                prev_y = y - velocity.get_y();
+                prev_z = z - velocity.get_z();
             }
         }        
     }
@@ -70,7 +93,7 @@ namespace cloth {
         if (is_pinned) {return;}
 
         // Accumulated force acting on the particle
-        geometry::Vector4 force{0.f, -9.81f, 0.f};
+        geometry::Vector4 force{0.f, -9.81f * mass, 0.f};
 
         // Compute acceleration using Newton Second Law
         geometry::Vector4 acceleration{force.get_x()/mass, force.get_y()/mass, force.get_z()/mass};
