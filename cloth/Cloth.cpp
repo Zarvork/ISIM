@@ -87,77 +87,10 @@ namespace cloth{
         //particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
     }
 
-    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass) {
-        this->width = width;
-        this->height = height;
-        float diagonal_spacing = std::sqrt(spacing*spacing + spacing*spacing);
-
-        // Create each particle of the cloth
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                // Add noise so particles are not in the same plane
-                float z_noise = x * 0.01f;
-                // Create the particle with the spacing
-                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + y * spacing,startZ + z_noise,1,mass);
-                particles.push_back(p);
-            }
-        }
-
-        // Create all the sticks
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                // Get the current particle
-                std::shared_ptr<Particle> current_particle = particles.at((y * width) + x);
-
-                // Add Structural Springs
-                if (x != width - 1) {
-                    std::shared_ptr<Particle>& right_particle = particles.at((y * width) + (x + 1));
-                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(right_particle, current_particle, spacing);
-                    sticks.push_back(stick);
-                }
-
-                if (y != height - 1) {
-                    std::shared_ptr<Particle>& bottom_particle = particles.at(((y + 1) * width) + x);
-                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(bottom_particle, current_particle, spacing);
-                    sticks.push_back(stick);
-                }
-
-                // Add Shearing Springs
-                if (y != height - 1 && x != width - 1) {
-                    std::shared_ptr<Particle>& bottom_right_particle = particles.at(((y + 1) * width) + (x + 1));
-                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(bottom_right_particle, current_particle, diagonal_spacing);
-                    sticks.push_back(stick);
-                }
-
-                if (y != height - 1 && x != 0) {
-                    std::shared_ptr<Particle>& bottom_left_particle = particles.at(((y + 1) * width) + (x - 1));
-                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(bottom_left_particle, current_particle, diagonal_spacing);
-                    sticks.push_back(stick);
-                }
-
-                // Add Bending Springs
-                if (x < width - 2) {
-                    std::shared_ptr<Particle>& next_next_right = particles.at((y * width) + (x + 2));
-                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(next_next_right, current_particle, spacing * 2.0f);
-                    sticks.push_back(stick);
-                }
-                if (y < height - 2) {
-                    std::shared_ptr<Particle>& next_next_bottom = particles.at(((y + 2) * width) + x);
-                    std::shared_ptr<Stick> stick = std::make_shared<Stick>(next_next_bottom, current_particle, spacing * 2.0f);
-                    sticks.push_back(stick);
-                }
-            }
-        }
-
-        // Pin the particles at the top
-        particles.at(((height - 1) * width) + 0)->set_is_pinned(true);
-        particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
-    }
-
-    void Cloth::update(float delta_time, float damping, float total_time) {
+    void Cloth::update(float delta_time, float damping, float total_time, bool wind) {
         // Update the position of all particles in the cloth
         for (std::shared_ptr<Particle>&p: particles) {
-            p->update(delta_time, damping, total_time);
+            p->update(delta_time, damping, total_time, wind);
         }
 
         // Satisfy all the constraints

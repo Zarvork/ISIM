@@ -289,17 +289,6 @@ void generate_image(Scene& scene, Image& image) {
 
 
 int main() {
-    //auto center = geometry::Point4{0,0,0,1};
-    //auto texture = texture::Uniform_Texture{1,0.5,color::RGB{255,0,0}, 1,0.3};
-
-    //auto texture2 = texture::Uniform_Texture{1,0.5,color::RGB{0,255,0}, 1,0.3};
-    //auto center2 = geometry::Point4{-5,0,3,1};
-    //auto texture3 = texture::Uniform_Texture{1,0.5,color::RGB{0,0,255}, 1,0.3};
-    //auto sphere2 = object::Sphere{texture2,center2,1};
-    //std::vector<object::Object *>objects{&sphere,  &sphere2};
-    //object::Triangle triangle1{texture, geometry::Point4{-2,1,7,1},geometry::Point4{2,1,7,1},geometry::Point4{0,2,7,1}};
-    //object::Triangle triangle2{texture2, geometry::Point4{-3,0,5,1},geometry::Point4{-1,0,5,1},geometry::Point4{0,2,5,1}};
-
 /*
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
@@ -393,7 +382,7 @@ int main() {
     float startY = -((grid_size - 1) * spacing);
     float startZ = 0.0f;
 
-    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f};
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{}};
 
     std::cout << "Begin of the simulation." << std::endl;
 
@@ -406,6 +395,8 @@ int main() {
     float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
 
     float total_time = 0.f;
+
+    bool wind = true;
 
     for (int i = 0; i < num_frames; i++) {
         auto triangles = cloth.to_triangle(texture3);
@@ -428,7 +419,7 @@ int main() {
 
         // Update multiple times so it moves faster between generated images
         for (int step = 0; step < 30; step++) {
-            cloth.update(delta_time,damping_step, total_time);
+            cloth.update(delta_time,damping_step, total_time, wind);
             total_time += delta_time;
         }
     }
