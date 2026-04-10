@@ -93,7 +93,7 @@ namespace cloth {
         if (is_pinned) {return;}
 
         // Accumulated force acting on the particle
-        geometry::Vector4 force{0.f, -9.81f, 0.f};
+        geometry::Vector4 force{0.f, -9.81f * mass, 0.f};
 
         // Compute acceleration using Newton Second Law
         geometry::Vector4 acceleration{force.get_x()/mass, force.get_y()/mass, force.get_z()/mass};
