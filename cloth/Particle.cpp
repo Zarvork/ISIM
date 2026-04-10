@@ -1,5 +1,5 @@
 //
-// Created by anis on 28/03/2026.
+// Created by anis & lucil on 28/03/2026.
 //
 
 #include "Particle.hh"
@@ -7,6 +7,8 @@
 #include "projective_geometry/Vector4.hh"
 #include <algorithm>
 #include <iostream>
+#include <cmath>
+
 namespace cloth {
     Particle::Particle(float x, float y, float z, float w, float mass)
         : Point4(x, y, z, w), prev_x(x), prev_y(y), prev_z(z), mass(mass), is_pinned(false)
@@ -85,7 +87,7 @@ namespace cloth {
         }        
     }
 
-    void Particle::update(float delta_time, float damping) {
+    void Particle::update(float delta_time, float damping, float total_time, bool wind) {
         // delta_time = Time difference between the current frame and the previous one
         // damping = Controls how quickly the simulation loses energy
 
@@ -94,6 +96,17 @@ namespace cloth {
 
         // Accumulated force acting on the particle
         geometry::Vector4 force{0.f, -9.81f * mass, 0.f};
+
+        geometry::Vector4 wind_force{
+            0.1f * std::sin(total_time * 5.f),
+            0.f,
+            1.5f * std::abs(std::sin(z + total_time * 5.f) + std::cos(y + total_time * 5.f) / 3.f
+        )};
+
+        if (wind) {
+            force.set_x(force.get_x() + wind_force.get_x());
+            force.set_z(force.get_z() + wind_force.get_z());
+        }
 
         // Compute acceleration using Newton Second Law
         geometry::Vector4 acceleration{force.get_x()/mass, force.get_y()/mass, force.get_z()/mass};

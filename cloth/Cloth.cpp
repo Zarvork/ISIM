@@ -87,10 +87,10 @@ namespace cloth{
         //particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
     }
 
-    void Cloth::update(float delta_time, float damping) {
+    void Cloth::update(float delta_time, float damping, float total_time, bool wind) {
         // Update the position of all particles in the cloth
         for (std::shared_ptr<Particle>&p: particles) {
-            p->update(delta_time, damping);
+            p->update(delta_time, damping, total_time, wind);
         }
 
         // Satisfy all the constraints
