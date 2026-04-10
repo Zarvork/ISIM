@@ -300,7 +300,7 @@ int main() {
     //object::Triangle triangle1{texture, geometry::Point4{-2,1,7,1},geometry::Point4{2,1,7,1},geometry::Point4{0,2,7,1}};
     //object::Triangle triangle2{texture2, geometry::Point4{-3,0,5,1},geometry::Point4{-1,0,5,1},geometry::Point4{0,2,5,1}};
 
-
+/*
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     std::shared_ptr<light::Light> point_light = std::make_shared<light::Point_Light>(1, geometry::Point4{2, 3, 5, 1}); 
@@ -366,6 +366,70 @@ int main() {
         // Update multiple times so it moves faster between generated images
         for (int step = 0; step < nb_steps; step++) {
             cloth.update(delta_time,damping_step);
+        }
+    }
+    std::cout << "Finished !" << std::endl;*/
+
+    // Texture and Light
+    auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
+    //light::Point_Light point_light{1, geometry::Point4{2, 3, 5, 1}};
+    //std::vector<light::Light *> lights{&point_light};
+    std::shared_ptr<light::Light> point_light = std::make_shared<light::Point_Light>(1, geometry::Point4{10, 0, 5, 1});
+    std::vector<std::shared_ptr<light::Light>> lights{point_light};
+
+    // Camera
+    auto center_camera = geometry::Point4{10, -2, 5, 1};
+    auto p = geometry::Point4{0, -3, 0, 1};
+    auto up = geometry::Vector4{0, 1, 0};
+    float alpha = 80.0f;
+    float beta = 80.0f;
+    float z_min = 1.0f;
+
+    // Cloth Paramater
+    int grid_size = 60;
+    float spacing = 0.15f;
+
+    float startX = -((grid_size - 1) * spacing) / 2.0f;
+    float startY = -((grid_size - 1) * spacing);
+    float startZ = 0.0f;
+
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f};
+
+    std::cout << "Begin of the simulation." << std::endl;
+
+    int num_frames = 60;
+    float time_between_image = 0.033f;
+    float delta_time = 1.f / 600.f;
+    int nb_steps = time_between_image / delta_time;
+    // Controls how quickly the simulation loses energy
+    float damping_global = 0.98f;
+    float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
+
+    float total_time = 0.f;
+
+    for (int i = 0; i < num_frames; i++) {
+        auto triangles = cloth.to_triangle(texture3);
+
+        std::vector<std::shared_ptr<object::Object>> objects{};
+        for (auto& t : triangles) {
+            objects.push_back(t);
+        }
+
+        Image image{400, 400};
+        Camera camera{center_camera, p, up, alpha, beta, z_min};
+
+        auto scene = Scene{objects, lights, camera, 0.2f};
+
+        std::cout << "Generation of image " << i + 1 << "/" << num_frames << "." << std::endl;
+        generate_image(scene, image);
+
+        std::string file_name = "test_" + (i < 10 ? std::string("0") : std::string("")) + std::to_string(i) + ".ppm";
+        image.save(file_name);
+
+        // Update multiple times so it moves faster between generated images
+        for (int step = 0; step < 30; step++) {
+            cloth.update(delta_time,damping_step, total_time);
+            total_time += delta_time;
         }
     }
     std::cout << "Finished !" << std::endl;

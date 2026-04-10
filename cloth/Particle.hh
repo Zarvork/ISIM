@@ -14,7 +14,7 @@ namespace cloth {
     public:
         Particle(float x, float y, float z, float w, float mass);
         
-        void update(float delta_time, float damping);
+        void update(float delta_time, float damping, float total_time);
 
         void handle_sphere_collision(const std::vector<std::shared_ptr<object::Sphere>>& spheres);
 
