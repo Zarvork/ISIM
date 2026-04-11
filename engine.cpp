@@ -289,7 +289,8 @@ void generate_image(Scene& scene, Image& image) {
 
 
 int main() {
-/*
+    /*
+    // SIMULATION OF THE CLOTH FALLING ON A SPHERE
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     std::shared_ptr<light::Light> point_light = std::make_shared<light::Point_Light>(1, geometry::Point4{2, 3, 5, 1}); 
@@ -315,8 +316,12 @@ int main() {
     float startX = -((grid_size - 1) * spacing) / 2.0f; 
     float startY = 1.2f;//-((grid_size - 1) * spacing);
     float startZ = -((grid_size - 1) * spacing) / 2.0f;
-    
-    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{sphere}};
+
+    // Disable the wind
+    bool wind = false;
+    float total_time = 0.f;
+
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{sphere}, true};
 
     std::cout << "Begin of the simulation." << std::endl;
     
@@ -354,11 +359,14 @@ int main() {
         
         // Update multiple times so it moves faster between generated images
         for (int step = 0; step < nb_steps; step++) {
-            cloth.update(delta_time,damping_step);
+            cloth.update(delta_time,damping_step, total_time, wind);
+            total_time += delta_time;
         }
     }
-    std::cout << "Finished !" << std::endl;*/
-
+    std::cout << "Finished !" << std::endl;
+    */
+    // SIMULATION OF THE CLOTH ACTING LIKE A FLAG WITH WIND
+    
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     //light::Point_Light point_light{1, geometry::Point4{2, 3, 5, 1}};
@@ -382,7 +390,7 @@ int main() {
     float startY = -((grid_size - 1) * spacing);
     float startZ = 0.0f;
 
-    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{}};
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{}, false};
 
     std::cout << "Begin of the simulation." << std::endl;
 

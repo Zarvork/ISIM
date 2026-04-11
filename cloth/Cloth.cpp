@@ -12,7 +12,7 @@
 #include <random>
 
 namespace cloth{
-    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres):
+    Cloth::Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres, bool is_xz_plane):
     width(width),
     height(height),
     spheres(spheres)
@@ -29,9 +29,14 @@ namespace cloth{
                 // Add noise so particles are not in the same plane
                 float noise_value = noise(gen);
                 // Create the particle with the spacing
-                // startY + y * spacing
-                // startZ + noise_value
-                std::shared_ptr<Particle> p = std::make_shared<Particle>(startX + x * spacing, startY + noise_value,startZ + y * spacing,1,mass);
+                // Check if we want the cloth to be in XZ plane or XY plane
+                std::shared_ptr<Particle> p = nullptr;
+                if (is_xz_plane) {
+                    p = std::make_shared<Particle>(startX + x * spacing, startY + noise_value,startZ + y * spacing,1,mass);
+                } 
+                else {
+                    p = std::make_shared<Particle>(startX + x * spacing, startY + y * spacing , startZ + noise_value,1,mass);
+                }
                 particles.push_back(p);
             }
         }

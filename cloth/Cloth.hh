@@ -13,7 +13,7 @@
 namespace cloth{
     class Cloth {
     public:
-        Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres);
+        Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass, const std::vector<std::shared_ptr<object::Sphere>>& spheres, bool is_xz_plane);
         //Cloth(int width, int height, float spacing, float startX, float startY, float startZ, float mass);
         void update(float delta_time, float damping, float total_time, bool wind);
         std::vector<std::shared_ptr<object::Triangle>> to_triangle(texture::Texture_Material &material);
