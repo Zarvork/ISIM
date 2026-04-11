@@ -19,3 +19,5 @@ Impact of the different parameters of the simulation:
 - delta_time => Time step of one physical step.
 
 - nb_steps => Number of physical steps calculated between two images. The higher the value, the faster the simulation progresses visually. It is computed with : time_between_image / delta_time.
+
+- is_xz_plane => When true, the cloth is in XZ plane. When false, the cloth is in XY plane.
