@@ -289,7 +289,6 @@ void generate_image(Scene& scene, Image& image) {
 
 
 int main() {
-    /*
     // SIMULATION OF THE CLOTH FALLING ON A SPHERE
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
@@ -364,9 +363,9 @@ int main() {
         }
     }
     std::cout << "Finished !" << std::endl;
-    */
-    // SIMULATION OF THE CLOTH ACTING LIKE A FLAG WITH WIND
     
+    // SIMULATION OF THE CLOTH ACTING LIKE A FLAG WITH WIND
+    /*
     // Texture and Light
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     //light::Point_Light point_light{1, geometry::Point4{2, 3, 5, 1}};
@@ -432,4 +431,5 @@ int main() {
         }
     }
     std::cout << "Finished !" << std::endl;
+    */
 }
