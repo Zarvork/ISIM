@@ -23,7 +23,7 @@ namespace cloth{
         std::vector<std::shared_ptr<Particle>> particles;
         std::vector<std::shared_ptr<Stick>> sticks;
         std::vector<std::shared_ptr<object::Sphere>> spheres;
-        int NUM_ITERATIONS=4; // 30 7
+        int NUM_ITERATIONS=2; // 30 7 4
     };
 }
 
