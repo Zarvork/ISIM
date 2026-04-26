@@ -20,6 +20,10 @@
 #include "projective_geometry/Point4.hh"
 #include "projective_geometry/Vector4.hh"
 #include "texture/Uniform_Texture.hh"
+#include <future>
+#include <format>
+
+
 void compute_camera_coordinate_system(const Camera& camera, geometry::Vector4& W, geometry::Vector4& U,  geometry::Vector4& V) {
     W = (camera.get_p() - camera.get_center());
     U = W.cross(camera.get_up());
@@ -241,49 +245,58 @@ void generate_image(Scene& scene, Image& image) {
     // Compute the upper left point of the physical image
     geometry::Vector4 left_upper_corner = W*(camera.get_z_min()) - U*(plan_width/2) + V*(plan_height/2);
 
-    // Necessary to generate random number
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    // Uniform distribution between 0 included and 1 excluded
-    std::uniform_real_distribution<float> dist(0.0, 1.0);
+    // Create vector of threads
+    std::vector<std::future<void>> futures;
 
     int number_of_ray_per_pixel = 1;
     // Iterate over each pixel
     for (int y = 0; y < image.get_height(); y++) {
-        for (int x = 0; x < image.get_width(); x++) {
-            float sum_r = 0;
-            float sum_g = 0;
-            float sum_b = 0;
+        // Create a new thread for each row of the image
+        futures.push_back(std::async(std::launch::async, [&, y](){
+            // Necessary to generate random number
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            
+            // Uniform distribution between 0 included and 1 excluded
+            std::uniform_real_distribution<float> dist(0.0, 1.0);
+            
+            for (int x = 0; x < image.get_width(); x++) {
+                float sum_r = 0;
+                float sum_g = 0;
+                float sum_b = 0;
+                for (int i = 0; i < number_of_ray_per_pixel ;i++) {
+                    // Random offset for x and y
+                    float random_offset_x = dist(gen);
+                    float random_offset_y = dist(gen);
+                    // Calculation of dx and dy offsets
+                    float dx = ((x + random_offset_x) / static_cast<float>(image.get_width())) * plan_width;
+                    float dy = ((y + random_offset_y) / static_cast<float>(image.get_height())) * plan_height;
 
-            for (int i = 0; i < number_of_ray_per_pixel ;i++) {
-                // Random offset for x and y
-                float random_offset_x = dist(gen);
-                float random_offset_y = dist(gen);
-                // Calculation of dx and dy offsets
-                float dx = ((x + random_offset_x) / static_cast<float>(image.get_width())) * plan_width;
-                float dy = ((y + random_offset_y) / static_cast<float>(image.get_height())) * plan_height;
+                    // Calculating the direction vector of the ray
+                    geometry::Vector4 ray_direction = left_upper_corner + U * dx - V * dy;
+                    ray_direction.normalize();
 
-                // Calculating the direction vector of the ray
-                geometry::Vector4 ray_direction = left_upper_corner + U * dx - V * dy;
-                ray_direction.normalize();
+                    // Compute the closest object
+                    std::optional<geometry::Point4> closest_object_coord{std::nullopt};
+                    object::Object* closest_object = compute_closest_object(camera.get_center(), ray_direction, objects, closest_object_coord);
 
-                // Compute the closest object
-                std::optional<geometry::Point4> closest_object_coord{std::nullopt};
-                object::Object* closest_object = compute_closest_object(camera.get_center(), ray_direction, objects, closest_object_coord);
-
-                // Verify if the ray intersects an object
-                if (closest_object != nullptr) {
-                    color::RGB_f intensity = compute_local_illumination(lights, closest_object, closest_object_coord.value(),ray_direction,ambient_intensity,objects,6);
-                    // Add the color to the sum of all colors
-                    sum_r += intensity.get_r() * 255.f;
-                    sum_g += intensity.get_g() * 255.f;
-                    sum_b += intensity.get_b() * 255.f;
+                    // Verify if the ray intersects an object
+                    if (closest_object != nullptr) {
+                        color::RGB_f intensity = compute_local_illumination(lights, closest_object, closest_object_coord.value(),ray_direction,ambient_intensity,objects,6);
+                        // Add the color to the sum of all colors
+                        sum_r += intensity.get_r() * 255.f;
+                        sum_g += intensity.get_g() * 255.f;
+                        sum_b += intensity.get_b() * 255.f;
+                    }
                 }
+                // The value of the pixel is the mean value of all colors
+                pixels[y * image.get_width() + x] = color::RGB{static_cast<uint8_t>(std::round(sum_r / number_of_ray_per_pixel)),static_cast<uint8_t>(std::round(sum_g / number_of_ray_per_pixel)),static_cast<uint8_t>(std::round(sum_b / number_of_ray_per_pixel))};
             }
-            // The value of the pixel is the mean value of all colors
-            pixels[y * image.get_width() + x] = color::RGB{static_cast<uint8_t>(std::round(sum_r / number_of_ray_per_pixel)),static_cast<uint8_t>(std::round(sum_g / number_of_ray_per_pixel)),static_cast<uint8_t>(std::round(sum_b / number_of_ray_per_pixel))};
-        }
+        }));
+        
+    }
+    for (auto& f : futures){
+        f.get();
     }
 }
 
@@ -353,7 +366,7 @@ int main() {
         std::cout << "Generation of image " << i + 1 << "/" << num_frames << "." << std::endl;
         generate_image(scene, image);
         
-        std::string file_name = "test_" + (i < 10 ? std::string("0") : std::string("")) + std::to_string(i) + ".ppm";
+        std::string file_name = std::format("test_{:03}.ppm", i);
         image.save(file_name);
         
         // Update multiple times so it moves faster between generated images
