@@ -304,6 +304,7 @@ void generate_image(Scene& scene, Image& image) {
 int main() {
     // SIMULATION OF THE CLOTH FALLING ON A SPHERE
     // Texture and Light
+    
     auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
     std::shared_ptr<light::Light> point_light = std::make_shared<light::Point_Light>(1, geometry::Point4{2, 3, 5, 1}); 
     std::vector<std::shared_ptr<light::Light>> lights{point_light};
@@ -322,7 +323,7 @@ int main() {
     std::shared_ptr<object::Sphere> sphere = std::make_shared<object::Sphere>(texture,center,1);
 
     // Cloth Paramater
-    int grid_size = 60;
+    int grid_size = 100;
     float spacing = 0.06f; // 0.15f
     
     float startX = -((grid_size - 1) * spacing) / 2.0f; 
@@ -344,7 +345,7 @@ int main() {
     float delta_time = 1.f / 600.f;
     int nb_steps = time_between_image / delta_time;
     // Controls how quickly the simulation loses energy
-    float damping_global = 0.98f;
+    float damping_global = 0.98f; //0.8f
     float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
 
     std::cout << "Number of steps: " << nb_steps << std::endl;
@@ -377,6 +378,77 @@ int main() {
     }
     std::cout << "Finished !" << std::endl;
     
+    // SIMULATION OF THE CLOTH PINNED BY 4 corners
+    // Texture and Light
+    /*
+    auto texture3 = texture::Uniform_Texture{1, 0.5, color::RGB{0, 0, 255}, 1, 0.3};
+    std::shared_ptr<light::Light> point_light = std::make_shared<light::Point_Light>(1, geometry::Point4{2, 3, 5, 1}); 
+    std::vector<std::shared_ptr<light::Light>> lights{point_light};
+
+    // Camera
+    auto center_camera = geometry::Point4{4.0f, 3.0f, 4.0f, 1.0f};
+    auto p = geometry::Point4{0.0f, 0.0f, 0.0f, 1.0f};
+    auto up = geometry::Vector4{0, 1, 0};
+    float alpha = 60.0f;
+    float beta = 60.0f;
+    float z_min = 1.0f;
+
+    // Cloth Paramater
+    int grid_size = 100;
+    float spacing = 0.06f; // 0.15f
+    
+    float startX = -((grid_size - 1) * spacing) / 2.0f; 
+    float startY = 0.f;//-((grid_size - 1) * spacing);
+    float startZ = -((grid_size - 1) * spacing) / 2.0f;
+
+    // Disable the wind
+    bool wind = false;
+    float total_time = 0.f;
+
+    cloth::Cloth cloth{grid_size, grid_size, spacing, startX, startY, startZ, 1.0f, std::vector<std::shared_ptr<object::Sphere>>{}, true};
+
+    std::cout << "Begin of the simulation." << std::endl;
+    
+    int num_frames = 1000;
+    // Time interval between two generated images
+    float time_between_image = 0.033f; // 30 FPS
+    // Time difference between the current frame and the previous one
+    float delta_time = 1.f / 600.f;
+    int nb_steps = time_between_image / delta_time;
+    // Controls how quickly the simulation loses energy
+    float damping_global = 0.8f;
+    float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
+
+    std::cout << "Number of steps: " << nb_steps << std::endl;
+    std::cout << "damping_step: " << damping_step << std::endl;
+
+    for (int i = 0; i < num_frames; i++) {
+        auto triangles = cloth.to_triangle(texture3);
+        
+        std::vector<std::shared_ptr<object::Object>> objects{};
+        for (auto& t : triangles) {
+            objects.push_back(t);
+        }
+        
+        Image image{400, 400}; 
+        Camera camera{center_camera, p, up, alpha, beta, z_min};
+        
+        auto scene = Scene{objects, lights, camera, 0.2f}; 
+        
+        std::cout << "Generation of image " << i + 1 << "/" << num_frames << "." << std::endl;
+        generate_image(scene, image);
+        
+        std::string file_name = std::format("test_{:03}.ppm", i);
+        image.save(file_name);
+        
+        // Update multiple times so it moves faster between generated images
+        for (int step = 0; step < nb_steps; step++) {
+            cloth.update(delta_time,damping_step, total_time, wind);
+            total_time += delta_time;
+        }
+    }
+    std::cout << "Finished !" << std::endl;
+    */
     // SIMULATION OF THE CLOTH ACTING LIKE A FLAG WITH WIND
     /*
     // Texture and Light

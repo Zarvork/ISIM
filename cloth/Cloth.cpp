@@ -87,9 +87,16 @@ namespace cloth{
             }
         }
 
-        // Pin the particles at the top
+        // Pin the particles at the top (necessary for SIMULATION OF THE CLOTH ACTING LIKE A FLAG WITH WIND)
         //particles.at(((height - 1) * width) + 0)->set_is_pinned(true);
         //particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
+
+        // Pin the particles at the 4 corners (necessary for SIMULATION OF THE CLOTH PINNED BY 4 corners)
+        //particles.at(((height - 1) * width) + 0)->set_is_pinned(true);
+        //particles.at(((height - 1) * width) + (width - 1))->set_is_pinned(true);
+        //particles.at((0 * width) + 0)->set_is_pinned(true);
+        //particles.at((0 * width) + (width - 1))->set_is_pinned(true);
+
     }
 
     void Cloth::update(float delta_time, float damping, float total_time, bool wind) {
