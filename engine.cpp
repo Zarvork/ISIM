@@ -345,7 +345,7 @@ int main() {
     float delta_time = 1.f / 600.f;
     int nb_steps = time_between_image / delta_time;
     // Controls how quickly the simulation loses energy
-    float damping_global = 0.98f; //0.8f
+    float damping_global = 0.94f; //0.8f 0.98f
     float damping_step = std::pow(damping_global, 1.f / static_cast<float>(nb_steps));
 
     std::cout << "Number of steps: " << nb_steps << std::endl;
