@@ -81,3 +81,8 @@ All parameters are variables at the top of each scenario in `main()` (`engine.cp
 | `time_between_image` | Time interval between two generated images (`0.033` = 30 FPS) |
 | `delta_time` | Time step of one physical step |
 | `nb_steps` | Number of physical steps computed between two images (`time_between_image / delta_time`). The higher the value, the faster the simulation progresses visually |
+
+## Authors
+
+- Anis Feore
+- Lucil Finkelstein
