@@ -1,31 +1,83 @@
-# ISIM
+# ISIM: Cloth Simulation
 
-## Impact of the different parameters of the simulation:
+A cloth physics simulation and a **ray tracer, both written from scratch in C++20** with no external library. The cloth is simulated with a mass-spring model integrated with Verlet, then each frame is rendered by the ray tracer.
 
-- mass => Mass of the particles.
+| 4 corners pinned | Wind | Sphere collision |
+|:--:|:--:|:--:|
+| ![corners_demo](high_quality_demo/cloth_4_corners_pinned.gif) | ![wind demo](high_quality_demo/cloth_wind.gif) | ![collision demo](high_quality_demo/sphere_collision.gif) |
 
-- damping => Controls how quickly the simulation loses energy. The higher the value, the less energy the cloth loses.
+## Highlights
 
-- number of iterations of the constraint loop => Impacts the overall stiffness of the cloth. The higher the value, the more the cloth is stiff.
+- **Cloth physics**: 100×100 particle grid linked by structural, shearing and bending constraints, integrated with Verlet
+- **Collisions** with a sphere, with Coulomb friction
+- **Custom ray tracer**: Phong shading (ambient, diffuse, specular), hard shadows, recursive reflections, spheres and triangles, multithreaded
+- **No dependencies**: only the C++ standard library
 
-- width/height => Controls the size of the cloth.
+## How it works
 
-- spacing => The distance between each particle.
+**Simulation.** Each step does three things:
 
-- num_frames => Number of images you want to generate.
+1. **Integrate motion** (Verlet): new particle positions from the forces (gravity, wind)
+2. **Enforce distance constraints**, iteratively:
+   - *structural* (direct neighbours): keeps the overall topology
+   - *shearing* (diagonal neighbours): stops the cloth from collapsing sideways
+   - *bending* (neighbours 2 apart): stops the cloth from folding perfectly in half
+3. **Enforce collisions**: a particle inside the sphere is projected onto its surface, with friction applied
 
-- time_between_image => Time interval between two generated images.
+**Rendering.** The cloth is converted to triangles, and the ray tracer renders each frame (400×400) to a PPM image, one thread per image row.
 
-- delta_time => Time step of one physical step.
+## Getting started
 
-- nb_steps => Number of physical steps calculated between two images. The higher the value, the faster the simulation progresses visually. It is computed with : time_between_image / delta_time.
+Requirements: CMake ≥ 3.21 and a C++20 compiler
 
-- is_xz_plane => When true, the cloth is in XZ plane. When false, the cloth is in XY plane.
+```bash
+git clone https://github.com/Zarvork/ISIM.git
+cd ISIM
+cmake -B build
+cmake --build build
+./build/cloth_simulation
+```
 
-## Demo
+The program writes one image per frame in the current directory (`test_000.ppm`, `test_001.ppm`, ...). To turn them into a video:
 
-<img width="400" height="400" alt="cloth_4_corners_pinned" src="https://github.com/user-attachments/assets/c4a1e81e-9219-470a-9bfc-a9b5942d7a3c" />
+```bash
+ffmpeg -framerate 30 -i test_%03d.ppm cloth.mp4
+```
 
-<img width="400" height="400" alt="cloth_wind" src="https://github.com/user-attachments/assets/276fe13d-f866-452b-a586-3918ba0b2a74" />
+The three scenarios (cloth falling on a sphere, cloth pinned by 4 corners, flag in the wind) are in `main()` of `engine.cpp`. Uncomment the one you want to run.
 
-<img width="400" height="400" alt="sphere_collision" src="https://github.com/user-attachments/assets/cf5e0218-ffed-43bf-9210-1e2bdbb2b178" />
+## Limitations
+
+- No self-collision
+- Collisions only with spheres (no floor, boxes...)
+- Not real-time, because of the ray tracer
+
+## Simulation parameters
+
+All parameters are variables at the top of each scenario in `main()` (`engine.cpp`).
+
+## Physics
+
+| Parameter | Description |
+|---|---|
+| `mass` | Mass of each particle |
+| `damping` | How quickly the simulation loses energy. The higher the value, the *less* energy the cloth loses. It is given per image (`damping_global`) and converted to a per-step value: `damping_global^(1 / nb_steps)` |
+| constraint iterations | Number of iterations of the constraint loop. The higher the value, the stiffer the cloth |
+| `wind` | Enables or disables the wind force |
+
+## Cloth geometry
+
+| Parameter | Description |
+|---|---|
+| `width` / `height` | Size of the cloth, in particles (`grid_size` in the scenarios) |
+| `spacing` | Distance between two neighbouring particles |
+| `is_xz_plane` | `true`: cloth lies in the XZ plane. `false`: XY plane |
+
+## Time and output
+
+| Parameter | Description |
+|---|---|
+| `num_frames` | Number of images to generate |
+| `time_between_image` | Time interval between two generated images (`0.033` = 30 FPS) |
+| `delta_time` | Time step of one physical step |
+| `nb_steps` | Number of physical steps computed between two images (`time_between_image / delta_time`). The higher the value, the faster the simulation progresses visually |
